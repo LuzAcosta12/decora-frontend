@@ -1,6 +1,6 @@
 import Sidebar from "../../components/Sidebar"
 import { Link } from "react-router-dom"
-import { useApp } from "../../context/AppContext"
+import { useApp, ETAPAS_PIPELINE } from "../../context/AppContext"
 
 const accesosRapidos = [
   { nombre: "Cotizaciones", icono: "📋", path: "/admin/cotizaciones", desc: "Ver solicitudes recibidas" },
@@ -13,6 +13,16 @@ const badgeCot = (estado) => {
   if (estado === "Nueva")          return "bg-blue-100 text-blue-700"
   if (estado === "En seguimiento") return "bg-yellow-100 text-yellow-700"
   return "bg-gray-100 text-gray-500"
+}
+
+const colorEtapa = {
+  "Nuevo":               "bg-blue-400",
+  "Contactado":          "bg-yellow-400",
+  "Cotización Enviada":  "bg-purple-400",
+  "Negociando":          "bg-orange-400",
+  "Confirmado":          "bg-green-500",
+  "Pospuesto":           "bg-gray-400",
+  "Cancelado":           "bg-red-400",
 }
 
 export default function Dashboard() {
@@ -29,6 +39,17 @@ export default function Dashboard() {
     { label: "Terminados",        valor: estadisticas.finalizados,                          icono: "✅", color: "bg-green-50 text-green-700" },
     { label: "Cot. nuevas",       valor: estadisticas.cotizacionesNuevas,                   icono: "🆕", color: "bg-purple-50 text-purple-700" },
     { label: "Ventas acumuladas", valor: `$${estadisticas.ventasAcumuladas.toLocaleString()}`, icono: "💰", color: "bg-emerald-50 text-emerald-700" },
+  ]
+
+  const totalProspectos = Object.values(estadisticas.prospectosPorEtapa).reduce((a, b) => a + b, 0)
+
+  const metricasComerciales = [
+    { label: "Prospectos activos",  valor: totalProspectos,                                     icono: "🗂️", path: "/admin/prospectos" },
+    { label: "Calificación prom.",  valor: estadisticas.calificacionPromedio > 0 ? `${estadisticas.calificacionPromedio.toFixed(1)} ⭐` : "Sin datos", icono: "⭐", path: "/admin/opiniones" },
+    { label: "Clientes Frecuentes", valor: estadisticas.clientesFrecuentesCount,                icono: "🔄", path: "/admin/clientes" },
+    { label: "Clientes VIP",        valor: estadisticas.clientesVIPCount,                       icono: "👑", path: "/admin/clientes" },
+    { label: "Campañas activas",    valor: estadisticas.campanasActivasCount,                   icono: "🏷️", path: "/admin/campanas" },
+    { label: "Recordatorios pend.", valor: estadisticas.recordatoriosPendientes,                icono: "⏰", path: "/admin/recordatorios" },
   ]
 
   return (
@@ -50,6 +71,47 @@ export default function Dashboard() {
               <p className="text-xs text-gray-500">{m.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Resumen comercial (punto 15) */}
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-navy mb-4">Resumen comercial</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            {metricasComerciales.map((m, i) => (
+              <Link key={i} to={m.path} className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-2 hover:shadow-md transition-shadow">
+                <span className="text-2xl">{m.icono}</span>
+                <p className="text-xl font-bold text-navy">{m.valor}</p>
+                <p className="text-xs text-gray-500">{m.label}</p>
+              </Link>
+            ))}
+          </div>
+
+          {/* Mini embudo visual del pipeline */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-navy text-sm">Prospectos por etapa del pipeline</h3>
+              <Link to="/admin/prospectos" className="text-xs text-golden font-semibold hover:underline">Ver pipeline</Link>
+            </div>
+            {totalProspectos === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-6">Aún no hay prospectos registrados</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {ETAPAS_PIPELINE.map((etapa) => {
+                  const cantidad = estadisticas.prospectosPorEtapa[etapa] || 0
+                  const porcentaje = totalProspectos > 0 ? (cantidad / totalProspectos) * 100 : 0
+                  return (
+                    <div key={etapa} className="flex items-center gap-3">
+                      <p className="text-xs text-gray-500 w-36 shrink-0">{etapa}</p>
+                      <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
+                        <div className={`h-4 rounded-full ${colorEtapa[etapa]}`} style={{ width: `${porcentaje}%` }} />
+                      </div>
+                      <p className="text-xs font-bold text-navy w-6 text-right">{cantidad}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Accesos rápidos */}

@@ -1,6 +1,7 @@
 import Navbar from "../../components/Navbar"
 import Footer from "../../components/Footer"
 import { Link } from "react-router-dom"
+import { useApp } from "../../context/AppContext"
 
 const serviciosDestacados = [
   {
@@ -41,7 +42,28 @@ const beneficios = [
   },
 ]
 
+function ocultarNombre(nombre) {
+  return nombre.split(" ").map(p =>
+    p.length <= 2 ? p : p.slice(0, 2) + "*".repeat(p.length - 2)
+  ).join(" ")
+}
+
+function diasRestantes(fechaFin) {
+  const hoy = new Date()
+  const fin = new Date(fechaFin)
+  const diff = Math.ceil((fin - hoy) / (1000 * 60 * 60 * 24))
+  return diff > 0 ? diff : 0
+}
+
 export default function Home() {
+  const { campanasActivas, resenas, pedidos } = useApp()
+
+  const resenasDestacadas = resenas
+    .filter(r => r.estado === "Aprobada" && r.calificacion >= 4)
+    .slice(0, 3)
+
+  const nombreClientePedido = (idPedido) => pedidos.find(p => p.id === idPedido)?.cliente || "Cliente DECORA"
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -73,6 +95,12 @@ export default function Home() {
               >
                 Solicitar cotización
               </Link>
+              <Link
+                to="/asesoria"
+                className="border-2 border-golden text-golden font-semibold px-6 py-3 rounded-lg hover:bg-golden hover:text-white transition-colors"
+              >
+                Pedir asesoría gratuita
+              </Link>
             </div>
           </div>
 
@@ -93,6 +121,32 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* PROMOCIONES DESTACADAS — solo aparece si hay campañas activas (punto 17) */}
+      {campanasActivas.length > 0 && (
+        <section className="bg-golden py-14 px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white">🔥 Promociones activas</h2>
+              <Link to="/promociones" className="text-white font-semibold hover:underline text-sm">
+                Ver todas →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {campanasActivas.slice(0, 3).map((c) => (
+                <div key={c.id} className="bg-white rounded-xl p-5 shadow-md">
+                  <p className="font-bold text-navy">{c.nombre}</p>
+                  <p className="text-sm text-gray-500 mt-1">{c.servicioAplicable}</p>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-xl font-bold text-golden">{c.porcentajeDescuento}% OFF</span>
+                    <span className="text-xs text-red-500 font-semibold">{diasRestantes(c.fechaFin)} días restantes</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* SERVICIOS DESTACADOS */}
       <section className="bg-gray-50 py-20 px-6">
@@ -144,6 +198,32 @@ export default function Home() {
         </div>
       </section>
 
+      {/* TESTIMONIOS — solo aparece si hay reseñas aprobadas destacadas (punto 17) */}
+      {resenasDestacadas.length > 0 && (
+        <section className="bg-white py-20 px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10">
+              <p className="text-golden text-sm font-semibold uppercase tracking-widest">Confían en nosotros</p>
+              <h2 className="text-3xl font-bold text-navy mt-1">Lo que dicen nuestros clientes</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {resenasDestacadas.map((r) => (
+                <div key={r.id} className="bg-gray-50 rounded-xl p-6">
+                  <div className="mb-3">{"⭐".repeat(r.calificacion)}</div>
+                  {r.comentario && <p className="text-gray-600 text-sm mb-4 leading-relaxed">"{r.comentario}"</p>}
+                  <p className="text-sm font-bold text-navy">{ocultarNombre(nombreClientePedido(r.idPedido))}</p>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-8">
+              <Link to="/opiniones" className="text-navy font-semibold hover:text-golden">
+                Ver todas las opiniones →
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* CTA */}
       <section className="bg-navy py-16 px-6 text-white text-center">
         <div className="max-w-2xl mx-auto">
@@ -154,12 +234,20 @@ export default function Home() {
             Compártenos los detalles de tu proyecto y te ayudamos a encontrar
             la mejor opción en tapicería y decoración.
           </p>
-          <Link
-            to="/cotizacion"
-            className="mt-8 inline-block bg-white text-navy font-bold px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Solicitar cotización
-          </Link>
+          <div className="flex gap-4 justify-center mt-8 flex-wrap">
+            <Link
+              to="/cotizacion"
+              className="inline-block bg-white text-navy font-bold px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              Solicitar cotización
+            </Link>
+            <Link
+              to="/asesoria"
+              className="inline-block border-2 border-golden text-golden font-bold px-8 py-4 rounded-lg hover:bg-golden hover:text-white transition-colors"
+            >
+              Pedir asesoría gratuita
+            </Link>
+          </div>
         </div>
       </section>
 

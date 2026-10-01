@@ -1,6 +1,6 @@
 import Sidebar from "../../components/Sidebar"
 import { useState, useMemo } from "react"
-import { useApp } from "../../context/AppContext"
+import { useApp, ETAPAS_PIPELINE, CANALES_ORIGEN } from "../../context/AppContext"
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement,
@@ -21,7 +21,7 @@ const badgeEstado = (estado) => {
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
 
 export default function Reportes() {
-  const { pedidos, cotizaciones, estadisticas } = useApp()
+  const { pedidos, cotizaciones, estadisticas, prospectos } = useApp()
 
   const [desde, setDesde] = useState("2026-01-01")
   const [hasta, setHasta] = useState("2026-12-31")
@@ -114,6 +114,48 @@ export default function Reportes() {
     plugins: { legend: { position: "bottom" } },
   }
 
+  // ── Gráfica nueva: embudo de conversión por etapa del pipeline ─────────────
+  const conteoEtapas = ETAPAS_PIPELINE.map(etapa => prospectos.filter(p => p.etapa === etapa).length)
+  const coloresEmbudo = ["#3b82f6","#eab308","#a855f7","#f97316","#22c55e","#9ca3af","#ef4444"]
+
+  const datosEmbudo = {
+    labels: ETAPAS_PIPELINE,
+    datasets: [{
+      label: "Prospectos",
+      data: conteoEtapas,
+      backgroundColor: coloresEmbudo,
+      borderRadius: 6,
+    }],
+  }
+
+  const opcionesEmbudo = {
+    responsive: true,
+    indexAxis: "y",
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
+      y: { grid: { display: false }, ticks: { font: { size: 10 } } },
+    },
+  }
+
+  // ── Gráfica nueva: fuentes de captación de prospectos ──────────────────────
+  const conteoFuentes = CANALES_ORIGEN.map(canal => prospectos.filter(p => p.canalOrigen === canal).length)
+  const totalProspectosConFuente = conteoFuentes.reduce((a, b) => a + b, 0)
+
+  const datosFuentes = totalProspectosConFuente > 0
+    ? {
+        labels: CANALES_ORIGEN,
+        datasets: [{
+          data: conteoFuentes,
+          backgroundColor: coloresDona,
+          borderWidth: 0,
+        }],
+      }
+    : {
+        labels: ["Sin prospectos"],
+        datasets: [{ data: [1], backgroundColor: ["#e5e7eb"], borderWidth: 0 }],
+      }
+
   return (
     <div className="flex">
       <Sidebar />
@@ -121,7 +163,7 @@ export default function Reportes() {
 
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-navy">Reportes</h1>
-          <p className="text-gray-500 text-sm mt-1">Análisis de pedidos e ingresos del periodo</p>
+          <p className="text-gray-500 text-sm mt-1">Análisis de pedidos, ingresos y desempeño comercial</p>
         </div>
 
         {/* Filtro fechas */}
@@ -173,7 +215,7 @@ export default function Reportes() {
           ))}
         </div>
 
-        {/* Gráficas con datos reales */}
+        {/* Gráficas operativas */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="font-bold text-navy mb-4">Pedidos por mes</h2>
@@ -184,6 +226,26 @@ export default function Reportes() {
             {serviciosLabels.length === 0
               ? <p className="text-gray-400 text-sm text-center py-10">No hay pedidos en el periodo</p>
               : <Doughnut data={datosDona} options={opcionesDona} />
+            }
+          </div>
+        </div>
+
+        {/* Gráficas comerciales nuevas (punto 16) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="font-bold text-navy mb-1">Embudo de conversión</h2>
+            <p className="text-xs text-gray-400 mb-4">Cantidad de prospectos por etapa del pipeline comercial</p>
+            {prospectos.length === 0
+              ? <p className="text-gray-400 text-sm text-center py-10">No hay prospectos registrados todavía</p>
+              : <Bar data={datosEmbudo} options={opcionesEmbudo} />
+            }
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="font-bold text-navy mb-1">Fuentes de captación</h2>
+            <p className="text-xs text-gray-400 mb-4">Canal por el que llegaron los prospectos registrados</p>
+            {totalProspectosConFuente === 0
+              ? <p className="text-gray-400 text-sm text-center py-10">No hay prospectos registrados todavía</p>
+              : <Doughnut data={datosFuentes} options={opcionesDona} />
             }
           </div>
         </div>

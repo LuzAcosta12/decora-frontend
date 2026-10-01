@@ -6,6 +6,10 @@ const links = [
   { name: "Servicios", path: "/servicios" },
   { name: "Galería", path: "/galeria" },
   { name: "Acerca de", path: "/acerca-de" },
+  { name: "Asesoría", path: "/asesoria" },
+  { name: "Consultar asesoría", path: "/asesoria/seguimiento" },
+  { name: "Promociones", path: "/promociones" },
+  { name: "Opiniones", path: "/opiniones" },
   { name: "Cotización", path: "/cotizacion" },
   { name: "Rastrear pedido", path: "/rastreo" },
   { name: "Contacto", path: "/contacto" },
@@ -19,18 +23,16 @@ export default function Navbar() {
     <nav className="bg-navy w-full z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         
-        {/* Logo */}
         <Link to="/" className="text-white text-2xl font-bold tracking-wide">
           DECORA
         </Link>
 
-        {/* Links escritorio */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-4 flex-wrap justify-end">
           {links.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`text-sm font-medium transition-colors duration-200 ${
+              className={`text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
                 location.pathname === link.path
                   ? "text-golden border-b-2 border-golden pb-1"
                   : "text-white hover:text-golden"
@@ -41,7 +43,6 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Botón menú móvil */}
         <button
           className="md:hidden text-white text-2xl"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -50,7 +51,6 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Menú móvil */}
       {menuOpen && (
         <div className="md:hidden bg-navy-dark px-6 pb-4 flex flex-col gap-3">
           {links.map((link) => (

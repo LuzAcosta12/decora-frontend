@@ -23,10 +23,11 @@ const FORM_VACIO = {
   servicio: "", descripcion: "", cantidad: "",
   fechaEntrega: "", costo: "", anticipo: "",
   estado: "Pendiente", observaciones: "",
+  codigoPromocional: "",
 }
 
 export default function Pedidos() {
-  const { pedidos, crearPedido, actualizarPedido, eliminarPedido } = useApp()
+  const { pedidos, crearPedido, actualizarPedido, eliminarPedido, buscarDescuentoCliente, buscarCampanaPorCodigo } = useApp()
   const location = useLocation()
 
   const [vista,             setVista]             = useState("lista")
@@ -73,6 +74,7 @@ export default function Pedidos() {
         anticipo:      "",
         estado:        "Pendiente",
         observaciones: "",
+        codigoPromocional: "",
       })
       setArchivoCot(null)
       setVista("formulario")
@@ -126,6 +128,7 @@ export default function Pedidos() {
       anticipo:      p.anticipo || "",
       estado:        p.estado,
       observaciones: p.observaciones || "",
+      codigoPromocional: p.codigoPromocional || "",
     })
     setArchivoCot(p.archivoCot || null)
     setArchivoError("")
@@ -146,6 +149,7 @@ export default function Pedidos() {
       estado:        form.estado,
       observaciones: form.observaciones,
       archivoCot,
+      codigoPromocional: form.codigoPromocional || "",
     }
     if (pedidoEditar) {
       actualizarPedido(pedidoEditar.id, datos)
@@ -163,6 +167,10 @@ export default function Pedidos() {
     const estado = filtroEstado === "Todos" || p.estado === filtroEstado
     return texto && estado
   })
+
+  // Validación en vivo del código promocional escrito por el admin
+  const campanaDetectada = form.codigoPromocional ? buscarCampanaPorCodigo(form.codigoPromocional) : null
+  const codigoInvalido = form.codigoPromocional && !campanaDetectada
 
   return (
     <div className="flex">
@@ -323,6 +331,16 @@ export default function Pedidos() {
                       className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-navy" />
                   </div>
                 </div>
+                {/* Alerta de descuento sugerido — se activa si el nombre coincide con un cliente frecuente/VIP */}
+                {form.nombre && buscarDescuentoCliente(form.nombre) && (
+                  <div className="mt-4 bg-golden/10 border border-golden rounded-lg px-4 py-3 flex items-center gap-3">
+                    <span className="text-xl">⭐</span>
+                    <p className="text-sm text-navy">
+                      <span className="font-bold">{form.nombre}</span> tiene un descuento especial registrado del{" "}
+                      <span className="font-bold">{buscarDescuentoCliente(form.nombre)}%</span>. Considéralo al definir el costo.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Detalle del proyecto */}
@@ -400,6 +418,32 @@ export default function Pedidos() {
               {/* Costo */}
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="font-bold text-navy mb-4">Costo final acordado</h2>
+
+                {/* Código promocional — validación en vivo contra campañas activas */}
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-navy mb-1">Código promocional (opcional)</label>
+                  <input type="text" name="codigoPromocional" value={form.codigoPromocional} onChange={handleChange}
+                    placeholder="Ej. VERANO25"
+                    className={`w-full border rounded-lg px-4 py-2 text-sm focus:outline-none uppercase ${
+                      codigoInvalido ? "border-red-400" : campanaDetectada ? "border-green-400" : "border-gray-300 focus:border-navy"
+                    }`} />
+
+                  {campanaDetectada && (
+                    <div className="mt-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3 flex items-center gap-3">
+                      <span className="text-xl">🏷️</span>
+                      <p className="text-sm text-navy">
+                        Código válido — <span className="font-bold">{campanaDetectada.nombre}</span>: aplica{" "}
+                        <span className="font-bold">{campanaDetectada.porcentajeDescuento}% de descuento</span> en {campanaDetectada.servicioAplicable}. Considéralo al definir el importe.
+                      </p>
+                    </div>
+                  )}
+                  {codigoInvalido && (
+                    <p className="text-red-500 text-xs mt-2">
+                      Este código no corresponde a ninguna campaña activa. Verifica que esté bien escrito o que la promoción siga vigente.
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-navy mb-1">Importe total (MXN)</label>

@@ -23,7 +23,10 @@ function ocultarNombre(nombre) {
 }
 
 export default function Rastreo() {
-  const { buscarPedidoPorCodigo } = useApp()
+  const { buscarPedidoPorCodigo, existeResenaParaPedido, crearResena } = useApp()
+  const [calificacion, setCalificacion]     = useState(0)
+  const [comentario, setComentario]         = useState("")
+  const [resenaEnviada, setResenaEnviada]   = useState(false)
 
   const [codigo,   setCodigo]   = useState("")
   const [estadoUI, setEstadoUI] = useState("vacio")  // "vacio"|"encontrado"|"noEncontrado"
@@ -229,6 +232,49 @@ export default function Rastreo() {
                   ¿Tienes dudas? Contáctanos
                 </a>
               </div>
+
+              {/* Calificación postventa — solo si está Entregado y no calificado */}
+              {pedido.estado === "Entregado" && !existeResenaParaPedido(pedido.id) && !resenaEnviada && (
+                <div className="bg-gray-50 rounded-xl p-6 mt-6">
+                  <p className="text-sm font-bold text-navy mb-1">¿Cómo fue tu experiencia?</p>
+                  <p className="text-xs text-gray-500 mb-4">Tu opinión nos ayuda a mejorar. Es completamente opcional.</p>
+                  <div className="flex gap-2 mb-4">
+                    {[1, 2, 3, 4, 5].map((estrella) => (
+                      <button
+                        key={estrella}
+                        type="button"
+                        onClick={() => setCalificacion(estrella)}
+                        className={`text-3xl transition-transform hover:scale-110 ${estrella <= calificacion ? "opacity-100" : "opacity-25"}`}
+                      >
+                        ⭐
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    placeholder="Cuéntanos algo más (opcional)"
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-navy resize-none mb-4"
+                  />
+                  <button
+                    disabled={calificacion === 0}
+                    onClick={() => {
+                      crearResena(pedido.id, calificacion, comentario)
+                      setResenaEnviada(true)
+                    }}
+                    className="bg-navy text-white font-bold px-6 py-3 rounded-lg hover:bg-navy-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Enviar calificación
+                  </button>
+                </div>
+              )}
+
+              {(resenaEnviada || (pedido.estado === "Entregado" && existeResenaParaPedido(pedido.id))) && (
+                <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4 mt-6 text-center">
+                  <p className="text-sm font-semibold text-green-700">¡Gracias por tu calificación! 🎉</p>
+                </div>
+              )}
             </div>
           )}
         </div>
